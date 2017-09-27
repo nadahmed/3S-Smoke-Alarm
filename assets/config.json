@@ -1,0 +1,12 @@
+{
+    "server":
+    {
+        "host": "192.168.0.3",
+        "port": 1883,
+        "username": "loraadm",
+        "password": "URloraadm123456"
+    },
+    "topic": {
+        "application_id": "1"
+    }
+}

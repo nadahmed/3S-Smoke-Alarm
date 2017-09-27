@@ -1,27 +1,36 @@
 {
-  "name": "electron-quick-start-ts",
-  "version": "1.0.0",
-  "description": "A minimal Electron application",
-  "main": "main.js",
-  "scripts": {
-    "build": "tsc",
-    "lint": "tslint -c tslint.json -p tsconfig.json",
-    "start": "npm run build && electron ./dist/main.js"
-  },
-  "repository": "https://github.com/electron/electron-quick-start-ts",
-  "keywords": [
-    "Electron",
-    "quick",
-    "start",
-    "tutorial",
-    "demo",
-    "typescript"
-  ],
-  "author": "GitHub",
-  "license": "CC0-1.0",
-  "devDependencies": {
-    "electron": "^1.7.8",
-    "tslint": "^5.7.0",
-    "typescript": "^2.5.3"
-  }
+    "productName": "3S Smoke Alarm",
+    "name": "sssmokealarm",
+    "version": "1.0.0",
+    "description": "URSALINK MQTT Smoke alarm app",
+    "main": "dist/main.js",
+    "scripts": {
+        "build": "electron-packager . --platform=win32 --arch=x64 --overwrite",
+        "watch": "tsc -w",
+        "lint": "tslint -c tslint.json -p tsconfig.json",
+        "start": "npm run build && electron ./dist/main.js"
+    },
+    "repository": "https://github.com/electron/electron-quick-start-typescript",
+    "keywords": [
+        "Electron",
+        "URSALINK",
+        "U87",
+        "Smoke Alarm",
+        "mqtt"
+    ],
+    "author": "Hivecore.io",
+    "license": "MIT",
+    "devDependencies": {
+        "electron-packager": "^14.2.1",
+        "tslint": "^5.19.0",
+        "typescript": "^3.6.0",
+        "electron": "^6.1.7"
+    },
+    "dependencies": {
+        "@babel/plugin-transform-modules-commonjs": "^7.8.3",
+
+        "electron-store": "^5.1.0",
+        "mqtt": "^3.0.0",
+        "play-sound": "^1.1.3"
+    }
 }
