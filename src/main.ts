@@ -1,5 +1,6 @@
-import { app, Menu, Tray } from "electron";
+import { app, dialog, ipcMain, Menu, Tray } from "electron";
 import nativeImage = require("electron");
+import * as Store from "electron-store";
 import * as fs from "fs";
 import * as mqtt from "mqtt";
 import * as path from "path";
@@ -7,6 +8,39 @@ import { IConfig } from "./mytypes";
 import { MyPlayer } from "./playAlert";
 import { SettingWindow } from "./settingWindow";
 
+
+const store = new Store();
+
+const defaultConfig: IConfig = {
+    server:
+    {
+        host: "192.168.0.1",
+        port: 1883,
+        username: "loraadm",
+        password: "URloraadm123456",
+    },
+    topic: {
+        application_id: "1",
+    },
+};
+
+
+ipcMain.on("form-submission", async ( _, form: IConfig) => {
+    // console.log("this is the firstname from the form ->", form);
+    store.set("config", form);
+    await dialog.showMessageBox(ns.settingWindow.getBrowserWindow(), {type: "info", title: "Setting Saved!", message: "SETTINGS SAVED!\nApplication will restart for changes to take effect."});
+    app.quit();
+    app.relaunch();
+});
+
+ipcMain.on("close-settings-page", () => {
+    ns.settingWindow.close();
+});
+
+ipcMain.on("get-server-settings", (event) => {
+    const conf = store.get("config", defaultConfig);
+    event.sender.send("server-settings", conf);
+});
 
 let tray: Tray = null;
 let client: mqtt.Client = null;
@@ -16,7 +50,8 @@ const player = new MyPlayer();
 const ns: ({settingWindow: SettingWindow}) = {settingWindow: null};
 
 player.file = path.join(__dirname, "../assets/alert.wav");
-const config: IConfig = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/config.json")).toString());
+// const config: IConfig = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/config.json")).toString());
+const config: IConfig = store.get("config", defaultConfig);
 const topic = "application/" + config.topic.application_id + "/device/+/rx";
 
 let active = nativeImage.nativeImage.createFromPath(path.join(__dirname, "../assets/active.png"));
@@ -26,20 +61,11 @@ let inactive = nativeImage.nativeImage.createFromPath(path.join(__dirname, "../a
 inactive = inactive.resize({ height: 8 });
 
 
-
-
-
-// win.on("closed", () => {
-
-// });
-
-
-// ipcMain.on("form-submission", ( _, form: IConfig) => {
-//     console.log("this is the firstname from the form ->", form);
-// });
-
-
 app.on("ready", () => {
+
+
+    
+
 
     ns.settingWindow = new SettingWindow();
     // ns.settingWindow.show();

@@ -3,20 +3,24 @@ import * as path from "path";
 
 export class SettingWindow {
     
-    private size = { width: 250, height: 360 };
+    private size = { width: 350, height: 500 };
     
 
     constructor(private win?: BrowserWindow) {
         this.win = new BrowserWindow({
+            webPreferences: {
+                nodeIntegration: true,
+            },
             // title: "Setting",
             // darkTheme: true,
             ...this.size,
             show: false,
             resizable: false,
             maximizable: false,
-            icon: path.join(__dirname, "../assets/alert.ico"),
+            icon: path.join(__dirname, "../assets/settings.png"),
         },
         );
+        // this.win.webContents.openDevTools();
         this.win.removeMenu();
     }
 
@@ -53,5 +57,9 @@ export class SettingWindow {
         this.size.width = size.width;
         this.size.height = size.height;
         this.win.setSize(this.size.width, this.size.height, animate);
+    }
+
+    public getBrowserWindow() {
+        return this.win;
     }
 }

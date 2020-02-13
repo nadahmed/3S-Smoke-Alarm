@@ -1,11 +1,11 @@
+import * as path from "path";
 import * as Player from "play-sound";
 
 export class MyPlayer {
     public file: string;
-    private player = Player({player: "cmdmp3"});
+    private player = Player({player: path.join(__dirname, "../assets/cmdmp3.exe")});
     private audio: { kill: () => void; } ;
     private loopFlag = true;
-    constructor() {}
 
     public play(file?: string): (Promise<any>) {
         if (!file) {
@@ -19,7 +19,7 @@ export class MyPlayer {
         }
         return new Promise<any>((resolve, reject) => {
                 this.audio = this.player.play(file, (err: any) => {
-                    if (err) { reject(err);}
+                    if (err) { reject(err); }
                     resolve(this.player);
                     });
 
