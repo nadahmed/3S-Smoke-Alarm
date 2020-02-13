@@ -13,7 +13,7 @@ let client: mqtt.Client = null;
 
 const player = new MyPlayer();
 
-let ns: ({settingWindow: SettingWindow}) = {settingWindow: null};
+const ns: ({settingWindow: SettingWindow}) = {settingWindow: null};
 
 player.file = path.join(__dirname, "../assets/alert.wav");
 const config: IConfig = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/config.json")).toString());
@@ -75,6 +75,7 @@ app.on("ready", () => {
                 
                 try {
                     ns.settingWindow.close();
+                // tslint:disable-next-line: no-empty
                 } catch (e) { }
                 ns.settingWindow = new SettingWindow();
                 ns.settingWindow.show();
