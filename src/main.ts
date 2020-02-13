@@ -1,54 +1,164 @@
-import { app, BrowserWindow } from "electron";
+import { app, Menu, Tray } from "electron";
+import nativeImage = require("electron");
+import * as fs from "fs";
+import * as mqtt from "mqtt";
 import * as path from "path";
+import { IConfig } from "./mytypes";
+import { MyPlayer } from "./playAlert";
+import { SettingWindow } from "./settingWindow";
 
-let mainWindow: Electron.BrowserWindow;
 
-function createWindow() {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-    },
-    width: 800,
-  });
+let tray: Tray = null;
+let client: mqtt.Client = null;
 
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, "../index.html"));
+const player = new MyPlayer();
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+let ns: ({settingWindow: SettingWindow}) = {settingWindow: null};
 
-  // Emitted when the window is closed.
-  mainWindow.on("closed", () => {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null;
-  });
-}
+player.file = path.join(__dirname, "../assets/alert.wav");
+const config: IConfig = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/config.json")).toString());
+const topic = "application/" + config.topic.application_id + "/device/+/rx";
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on("ready", createWindow);
+let active = nativeImage.nativeImage.createFromPath(path.join(__dirname, "../assets/active.png"));
+active = active.resize({ height: 8 });
 
-// Quit when all windows are closed.
-app.on("window-all-closed", () => {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+let inactive = nativeImage.nativeImage.createFromPath(path.join(__dirname, "../assets/inactive.png"));
+inactive = inactive.resize({ height: 8 });
+
+
+
+
+
+// win.on("closed", () => {
+
+// });
+
+
+// ipcMain.on("form-submission", ( _, form: IConfig) => {
+//     console.log("this is the firstname from the form ->", form);
+// });
+
+
+app.on("ready", () => {
+
+    ns.settingWindow = new SettingWindow();
+    // ns.settingWindow.show();
+    const contextMenu = Menu.buildFromTemplate([
+        { label: "Offline", enabled: false, icon: inactive },
+        { label: "Online", enabled: false, icon: active, visible: false },
+        { type: "separator" },
+        {
+            label: "Connect", click: () => {
+                client.reconnect();
+            },
+        },
+        {
+            label: "Disconnect", click: () => {
+                client.unsubscribe(topic);
+                client.end();
+            }, visible: false,
+        },
+        {
+            label: "Play Alarm", click: async () => {
+                await player.playLoop();
+            },
+        },
+        {
+            label: "Stop Alarm", click: () => {
+                player.kill();
+            },
+        },
+        {
+            label: "Settings", click: () => {
+                
+         
+                
+                try {
+                    ns.settingWindow.close();
+                } catch (e) { }
+                ns.settingWindow = new SettingWindow();
+                ns.settingWindow.show();
+            },
+        },
+        { label: "Exit", click: () => { tray.destroy(); app.quit(); } },
+    ]);
+
+
+
+
+
+
+
+    tray = new Tray(path.join(__dirname, "../assets/alarm-red.png"));
+
+    tray.setToolTip("MQTT Alarm App");
+
+    tray.setContextMenu(contextMenu);
+    tray.on("click", () => {
+        tray.popUpContextMenu(contextMenu);
+    });
+
+    client = mqtt.connect(null, {
+        username: config.server.username,
+        password: config.server.password,
+        servers: [{
+            host: config.server.host,
+            port: config.server.port,
+            protocol: "mqtt",
+        }],
+
+    });
+
+
+    client.on("connect", () => {
+
+        if (client.connected) {
+            client.subscribe(topic);
+            contextMenu.items[0].visible = false;
+            contextMenu.items[1].visible = true;
+            contextMenu.items[3].visible = false;
+            contextMenu.items[4].visible = true;
+            tray.setImage(path.join(__dirname, "../assets/alarm-green.png"));
+        }
+
+    });
+
+    client.on("close", () => {
+
+        contextMenu.items[0].visible = true;
+        contextMenu.items[1].visible = false;
+        contextMenu.items[3].visible = true;
+        contextMenu.items[4].visible = false;
+        tray.setImage(path.join(__dirname, "../assets/alarm-red.png"));
+    });
+
+
+    client.on("error", () => {
+        tray.setImage(path.join(__dirname, "../assets/warning.png"));
+    });
+    client.on("message", async (_, message) => {
+        const obj = JSON.parse(message.toString());
+        // console.log('[MQTT PARSED DATA]: ', obj.data);
+        switch (obj.data) {
+
+            case "AgAB":
+                player.kill();
+                await player.play();
+                break;
+
+            case "AgQA":
+                player.kill();
+                await player.playLoop();
+                break;
+
+            case "AgQC":
+                player.kill();
+                break;
+
+            // case "AgAA":
+            //     player.kill();
+            //     await player.play();
+            //     break;
+        }
+    });
 });
-
-app.on("activate", () => {
-  // On OS X it"s common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
-
-// In this file you can include the rest of your app"s specific main process
-// code. You can also put them in separate files and require them here.
