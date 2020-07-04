@@ -3,27 +3,15 @@ import * as path from 'path';
 
 export class ViewerWindow {
         
-    private win: BrowserWindow;
-
-    constructor() {
-        this.initialize();        
-    }
+    private win: BrowserWindow = null;
 
     public async show() {
 
         if (this.win === null) {
             this.initialize();
+        } else if (!this.win.isFocused()) {
+                this.win.show();
         }
-
-        if (!this.win.isVisible()) {
-            // await this.win.loadURL('http://localhost:4200');
-            await this.win.loadURL('file://' + path.join(__dirname, '../../src/Frontend/Viewer/index.html'));
-            this.win.show();  
-        }
-        if (this.win.isMinimized()) {
-            this.win.restore();
-        }
-            
     }
 
     public getBrowserWindow() {
@@ -53,6 +41,12 @@ export class ViewerWindow {
         // this.win.webContents.openDevTools();
         this.win.removeMenu();
 
+        // this.win.loadURL('http://localhost:4200');
+        this.win.loadURL('file://' + path.join(__dirname, '../../src/Frontend/Viewer/index.html'));
+        this.win.once('ready-to-show', () => {
+            this.win.show();
+        });
+        
         this.win.once('close', () => {
             this.win = null;
         });

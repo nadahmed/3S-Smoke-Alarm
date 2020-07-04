@@ -12,7 +12,6 @@ export class MQTTEventManager {
     constructor(private databaseName = 'mqttManager.db') {
         // this.dbLocation = eu.fixPathForAsarUnpack(path.join(__dirname, '../../data/' + this.databaseName));
         this.dbLocation = app.getPath('userData') + '\\data\\' + this.databaseName;
-        console.log( app.getName() , this.dbLocation);
         this.db = new Datastore({ filename: this.dbLocation, autoload: true });
     }
 

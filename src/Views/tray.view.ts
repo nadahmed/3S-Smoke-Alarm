@@ -1,6 +1,7 @@
 import { app, Menu, Tray } from 'electron';
 import nativeImage = require('electron');
 import * as path from 'path';
+import openAboutWindow from 'about-window';
 
 export class SystemTray {
 
@@ -57,13 +58,21 @@ export class SystemTray {
                 this.settingsCB();
             },
         },
+        { label: 'About', click: () => { openAboutWindow({
+            icon_path: path.join(__dirname, '../../assets/alert.ico'),
+            win_options: {
+                maximizable: false,
+            },
+            description: 'Developed by: Hivecore Limited',
+        }); } },
         { label: 'Exit', click: () => { this.tray.destroy(); app.quit(); } },
     ]);
 
     constructor() {
         this.tray = new Tray(path.join(__dirname, '../../assets/alarm-red.png'));
-        this.tray.setTitle('3S Smoke Alarm');
-        this.tray.setToolTip('MQTT Alarm App V1.1.0');
+        
+        this.tray.setTitle( app.getName() + ' v' + app.getVersion());
+        this.tray.setToolTip( app.getName() + ' v' + app.getVersion());
         this.tray.setContextMenu(this.contextMenu);
         this.tray.on('click', () => {
             this.tray.popUpContextMenu(this.contextMenu);

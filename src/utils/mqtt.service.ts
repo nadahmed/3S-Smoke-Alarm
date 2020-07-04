@@ -1,25 +1,25 @@
-import * as mqtt from "mqtt";
-import { Observable } from "rxjs";
-import { IConfig } from "./config.type";
+import * as mqtt from 'mqtt';
+import { Observable } from 'rxjs';
+import { IConfigV2 } from './config.type';
 
-class Mqtt {
+export class Mqtt {
     public client: mqtt.Client = null;
 
-    public connect(config: IConfig) {
+    public connect(config: IConfigV2) {
         this.client = mqtt.connect(null, {
             username: config.server.mqtt.username,
             password: config.server.mqtt.password,
             servers: [{
                 host: config.server.mqtt.host,
                 port: config.server.mqtt.port,
-                protocol: "mqtt",
+                protocol: 'mqtt',
             }],
         });
     }
 
     public onConnect(): Observable<boolean> {
         return new Observable((sub) => {
-            this.client.on("connect", () => {
+            this.client.on('connect', () => {
                 if (this.client.connected) {
                     sub.next(true);
                 }
@@ -29,7 +29,7 @@ class Mqtt {
 
     public onDisconnect(): Observable<boolean> {
         return new Observable<boolean>((sub) => {
-            this.client.on("close", () => {
+            this.client.on('close', () => {
                 if (this.client.disconnected) {
                     sub.next(true);
                     sub.complete();

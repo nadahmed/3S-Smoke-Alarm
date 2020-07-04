@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonJS",
+    "resolveJsonModule": true,
     "noImplicitAny": true,
     "sourceMap": true,
     "outDir": "dist",

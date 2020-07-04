@@ -1,0 +1,49 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    /* width: 100%; */
+    opacity: 1;
+    transition: 2s opacity;
+}
+
+body.fade-out {
+    opacity: 0;
+    transition: none;
+
+}
+
+#splash-img {
+    position: relative;
+}
+
+#splash-img img{
+    width: 100%;
+    height: auto;
+    /* visibility: hidden; */
+}
+
+.details {
+    position: absolute;
+    right: 3vw;
+    bottom: 3vw;
+    margin: 0;
+}
+
+.details p {
+    margin: 0;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    color: white;
+    text-align: end;
+}
+
+#supported-alarms {
+    font-size: 3.5vw;
+}
+#app-name{
+    font-size: 6vw;
+    font-weight: bolder;
+}
+
+#version {
+    font-size: 3vw;
+}
