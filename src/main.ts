@@ -1,191 +1,188 @@
-import { app, dialog, ipcMain, Menu, Tray } from "electron";
-import nativeImage = require("electron");
-import * as Store from "electron-store";
-import * as fs from "fs";
-import * as mqtt from "mqtt";
-import * as path from "path";
-import { IConfig } from "./mytypes";
-import { MyPlayer } from "./playAlert";
-import { SettingWindow } from "./settingWindow";
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import * as Store from 'electron-store';
+import * as eu from 'electron-util';
+import * as mqtt from 'mqtt';
+import * as path from 'path';
+import { ButtonStatus, JDSD51 } from './decoder/jdsd51.decoder';
+import { IConfig, MqttMessage, MqttEvent } from './utils/config.type';
+import { defaultConfig } from './utils/default_config';
+import { MQTTEventManager } from './utils/mqttEvent';
+import { MyPlayer } from './utils/playAlert';
+import { SettingWindow } from './Views/settingWindow';
+import { SystemTray } from './Views/tray.view';
+import { ViewerWindow } from './Views/viewerWindow';
 
 
 const store = new Store();
-
-const defaultConfig: IConfig = {
-    server:
-    {
-        host: "192.168.0.1",
-        port: 1883,
-        username: "loraadm",
-        password: "URloraadm123456",
-    },
-    topic: {
-        application_id: "1",
-    },
-};
-
-
-ipcMain.on("form-submission", async ( _, form: IConfig) => {
-    // console.log("this is the firstname from the form ->", form);
-    store.set("config", form);
-    await dialog.showMessageBox(ns.settingWindow.getBrowserWindow(), {type: "info", title: "Setting Saved!", message: "SETTINGS SAVED!\nApplication will restart for changes to take effect."});
-    app.quit();
-    app.relaunch();
-});
-
-ipcMain.on("close-settings-page", () => {
-    ns.settingWindow.close();
-});
-
-ipcMain.on("get-server-settings", (event) => {
-    const conf = store.get("config", defaultConfig);
-    event.sender.send("server-settings", conf);
-});
-
-let tray: Tray = null;
-let client: mqtt.Client = null;
-
-const player = new MyPlayer();
-
-const ns: ({settingWindow: SettingWindow}) = {settingWindow: null};
-
-player.file = path.join(__dirname, "../assets/alert.wav");
-// const config: IConfig = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/config.json")).toString());
-const config: IConfig = store.get("config", defaultConfig);
-const topic = "application/" + config.topic.application_id + "/device/+/rx";
-
-let active = nativeImage.nativeImage.createFromPath(path.join(__dirname, "../assets/active.png"));
-active = active.resize({ height: 8 });
-
-let inactive = nativeImage.nativeImage.createFromPath(path.join(__dirname, "../assets/inactive.png"));
-inactive = inactive.resize({ height: 8 });
-
-
-app.on("ready", () => {
-
-
-    
-
-
-    ns.settingWindow = new SettingWindow();
-    // ns.settingWindow.show();
-    const contextMenu = Menu.buildFromTemplate([
-        { label: "Offline", enabled: false, icon: inactive },
-        { label: "Online", enabled: false, icon: active, visible: false },
-        { type: "separator" },
-        {
-            label: "Connect", click: () => {
-                client.reconnect();
-            },
-        },
-        {
-            label: "Disconnect", click: () => {
-                client.unsubscribe(topic);
-                client.end();
-            }, visible: false,
-        },
-        {
-            label: "Play Alarm", click: async () => {
-                await player.playLoop();
-            },
-        },
-        {
-            label: "Stop Alarm", click: () => {
-                player.kill();
-            },
-        },
-        {
-            label: "Settings", click: () => {
-                
-         
-                
-                try {
-                    ns.settingWindow.close();
-                // tslint:disable-next-line: no-empty
-                } catch (e) { }
-                ns.settingWindow = new SettingWindow();
-                ns.settingWindow.show();
-            },
-        },
-        { label: "Exit", click: () => { tray.destroy(); app.quit(); } },
-    ]);
+const mqttevent = new MQTTEventManager();
 
 
 
-
-
-
-
-    tray = new Tray(path.join(__dirname, "../assets/alarm-red.png"));
-
-    tray.setToolTip("MQTT Alarm App");
-
-    tray.setContextMenu(contextMenu);
-    tray.on("click", () => {
-        tray.popUpContextMenu(contextMenu);
+ipcMain.on('mqtt-event-initial', async (event, _) => {
+    const objs = await mqttevent.all();
+    objs.forEach( (obj) => {
+        event.sender.send('mqtt-event', obj);
     });
+});
 
-    client = mqtt.connect(null, {
-        username: config.server.username,
-        password: config.server.password,
+ipcMain.on('mqtt-event-removeAll', async (event, _) => {
+    const n = await mqttevent.removeAll();
+    dialog.showMessageBox(BrowserWindow.fromId(event.frameId) , {title: 'Event Message Removed', message: n + ' Records were removed!'});
+});
+
+ipcMain.on('save-configuration', ( _, form: IConfig) => {
+    store.set('config', form);
+});
+
+ipcMain.on('get-default-configuration',  (event) => {
+    event.returnValue = defaultConfig;
+});
+
+ipcMain.on('get-server-settings', (event) => {
+    const conf: IConfig = store.get('config', defaultConfig);
+    event.sender.send('server-settings', conf);
+});
+
+let config: IConfig = store.get('config', defaultConfig);
+
+let topic = '';
+try {
+    topic = 'application/' + config.meta.applicationId + '/device/+/rx';
+} catch {
+    config = defaultConfig;
+    store.set('config', config);
+    topic = 'application/' + config.meta.applicationId + '/device/+/rx';
+}
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+    dialog.showErrorBox('Multiple instance detected', 'Another instance of this app is already running.');
+    app.quit();
+  } 
+
+app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
+
+
+
+app.on('ready', () => {
+
+    const audioFile = eu.fixPathForAsarUnpack(path.join(__dirname, '../player/alert.wav'));
+
+    console.log(audioFile);
+    const player = new MyPlayer(audioFile);
+
+    const client = mqtt.connect(null, {
+        username: config.server.mqtt.username,
+        password: config.server.mqtt.password,
         servers: [{
-            host: config.server.host,
-            port: config.server.port,
-            protocol: "mqtt",
+            host: config.server.mqtt.host,
+            port: config.server.mqtt.port,
+            protocol: 'mqtt',
         }],
 
     });
 
-
-    client.on("connect", () => {
-
+    client.on('connect', () => {
         if (client.connected) {
             client.subscribe(topic);
-            contextMenu.items[0].visible = false;
-            contextMenu.items[1].visible = true;
-            contextMenu.items[3].visible = false;
-            contextMenu.items[4].visible = true;
-            tray.setImage(path.join(__dirname, "../assets/alarm-green.png"));
+            sTray.setMenuStateToConnected();
+        }
+    });
+
+    client.on('close', () => {
+        sTray.setMenuStateToDisconnected();
+    });
+
+    client.on('error', () => {
+        sTray.setMenuStateToError();
+    });
+
+    client.on('message', async (_, message) => {
+        const obj: MqttMessage = JSON.parse(message.toString());
+///////////////////////////////////////////////
+        const count = await mqttevent.count();
+        const objEvent: MqttEvent = {
+            _id: count,
+            time: Date.now(),
+            ...obj,
+        };
+        mqttevent.insertData(objEvent);
+//////////////////////////////////////////////////
+        if (!viewerWindow.isClosed()) {
+            viewerWindow.getBrowserWindow().webContents.send('mqtt-message', obj);
+            viewerWindow.getBrowserWindow().webContents.send('mqtt-event', objEvent);
         }
 
-    });
-
-    client.on("close", () => {
-
-        contextMenu.items[0].visible = true;
-        contextMenu.items[1].visible = false;
-        contextMenu.items[3].visible = true;
-        contextMenu.items[4].visible = false;
-        tray.setImage(path.join(__dirname, "../assets/alarm-red.png"));
-    });
-
-
-    client.on("error", () => {
-        tray.setImage(path.join(__dirname, "../assets/warning.png"));
-    });
-    client.on("message", async (_, message) => {
-        const obj = JSON.parse(message.toString());
-        // console.log('[MQTT PARSED DATA]: ', obj.data);
-        switch (obj.data) {
-
-            case "AgAB":
-                player.kill();
-                await player.play();
-                break;
-
-            case "AgQA":
-                player.kill();
-                await player.playLoop();
-                break;
-
-            case "AgQC":
-                player.kill();
-                break;
-
-            // case "AgAA":
-            //     player.kill();
-            //     await player.play();
-            //     break;
+        const alarm = new JDSD51(obj.data);
+        console.log('[MQTT PARSED DATA]: ', obj.data);
+        if (alarm.status.buttonStatus === ButtonStatus.Test) {
+            player.kill();
+            player.play();
         }
+        
+        if (alarm.status.isSmokeDetected && (alarm.status.buttonStatus === ButtonStatus.Silenced)) {
+            player.kill();
+        }
+        
+        if (alarm.status.isSmokeDetected) {
+            player.playLoop();
+        }
+
+        // switch (obj.data) {
+
+        //     case "AgAB":
+        //         player.kill();
+        //         await player.play();
+        //         break;
+
+        //     case "AgQA":
+        //         player.kill();
+        //         await player.playLoop();
+        //         break;
+
+        //     case "AgQC":
+        //         player.kill();
+        //         break;
+
+        //     // case "AgAA":
+        //     //     player.kill();
+        //     //     await player.play();
+        //     //     break;
+        //     default:
+        //         break;
+        // }
+    });
+
+    const sTray = new SystemTray();
+    const viewerWindow = new ViewerWindow();
+    const settingsWindow = new SettingWindow();
+    
+    sTray.onClickOpenViewer(() => {
+        viewerWindow.show();
+    });
+
+    sTray.onClickPlayAlarm(async () => {
+        player.playLoop();
+    });
+
+    sTray.onClickStopAlarm( async () => {
+        player.kill();
+        if (!viewerWindow.isClosed()) {
+            viewerWindow.getBrowserWindow().webContents.send('stop-alarms');
+        }
+    });
+
+    sTray.onClickConnect(() => {
+        client.reconnect();
+    });
+
+    sTray.onClickDisconnect(() => {
+        client.unsubscribe(topic);
+        client.end();
+    });
+
+    sTray.onClickSettings( () => {
+        settingsWindow.show();
     });
 });
