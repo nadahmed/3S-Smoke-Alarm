@@ -1,9 +1,10 @@
-import { Decoder } from "./decoder";
+import { Decoder } from './decoder';
+import { JDSD51DecodeError } from './jdsd51.error';
 
 export enum ButtonStatus {
-    Normal = "Normal",
-    Test = "Test",
-    Silenced = "Silenced",
+    Normal = 'Normal',
+    Test = 'Test',
+    Silenced = 'Silenced',
 }
 
 export interface IStatus {
@@ -63,13 +64,19 @@ export class JDSD51 extends Decoder {
     }
 
     private decode(byteArray: ArrayBufferLike): void {
-        if (byteArray.byteLength !== 3) {
-            throw Error("The data does not seem like it's comming from JD-SD51 model");
-        }
+
         const data = new DataView(byteArray);
+
+        if (byteArray.byteLength !== 3) {
+            throw new JDSD51DecodeError();
+        }
         this.versionByte = data.getUint8(0);
         this.detectionTypeByte = data.getUint8(1);
         this.statusByte = data.getUint8(2);
+
+        if (this.versionByte !== 2) {
+            throw new JDSD51DecodeError();
+        }
 
         this.status = {
             buttonStatus: this.getButtonStatus(),
@@ -81,4 +88,6 @@ export class JDSD51 extends Decoder {
         };
     }
 }
+
+
 

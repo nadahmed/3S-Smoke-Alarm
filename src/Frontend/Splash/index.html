@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Splash Screen</title>
+  <meta name="description" content="The HTML5 Herald">
+  <meta name="author" content="SitePoint">
+
+  <link rel="stylesheet" href="./styles.css">
+  
+</head>
+
+<body>
+    <script>document.body.className += ' fade-out';</script>
+    <div id= "splash-img">
+        <img src="../../../assets/splash_template.png">
+        <div class="details">
+            <p id="supported-alarms"></p>
+            <p id="app-name"></p>
+            <p id="version"></p>
+        </div>
+    </div>
+    <script src="./renderer.js"></script>
+</body>
+</html>

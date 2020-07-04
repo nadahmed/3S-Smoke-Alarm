@@ -2,16 +2,17 @@
     "productName": "3S Smoke Alarm",
     "name": "sssmokealarm",
     "version": "1.1.0",
-    "description": "URSALINK MQTT Smoke alarm app",
+    "authors" : ["Noor Al Din Ahmed <nooraldinahmed@gmail.com>"],
+    "description": "JD-SD51 Smoke Alarm Software",
     "main": "dist/main.js",
     "scripts": {
         "clean": "rimraf ./dist",
         "build": "npm run clean && tsc",
-        "build-bin": "npm run build && rimraf ./releases && electron-packager . --platform=win32 --arch=x64 --overwrite --out=./releases --asar.unpackDir='player'",
+        "build-bin": "npm run build && rimraf ./releases && electron-packager . --platform=win32 --arch=x64 --overwrite --out=./releases --asar.unpackDir='player' --icon ./assets/alert.ico",
         "watch": "tsc -w",
         "lint": "tslint -c tslint.json -p tsconfig.json",
         "prestart": "npm run build",
-        "start": "electron ./dist/main.js",
+        "start": "electron .",
         "pretest": "tsc -t es5 ./src/test.ts",
         "test": "node ./src/test.js"
     },
@@ -35,6 +36,7 @@
     "dependencies": {
         "@babel/plugin-transform-modules-commonjs": "^7.8.3",
         "@types/nedb": "^1.8.9",
+        "about-window": "^1.13.4",
         "electron-db": "^1.0.0",
         "electron-store": "^5.1.0",
         "electron-util": "^0.13.1",

@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 
 export class MyPlayer {
@@ -26,6 +26,10 @@ export class MyPlayer {
 
         this.window.on('closed', () => {
             app.quit();
+        });
+
+        ipcMain.on('mute-alarm', () => {
+            this.kill();
         });
     }
     

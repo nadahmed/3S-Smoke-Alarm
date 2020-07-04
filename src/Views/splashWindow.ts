@@ -1,20 +1,13 @@
 import {app, BrowserWindow} from 'electron';
 import * as path from 'path';
 
-export class SettingWindow {
+export class SplashWindow {
     
-    private size = { width: 350, height: 600 };
-    // private size = { width: 550, height: 600 };
+    // private size = { width: 350, height: 600 };
+    private size = { width: 850, height: 480 };
     
-    private win: BrowserWindow = null;
+    private win?: BrowserWindow = null;
 
-    public async show() {
-        if (this.win === null) {
-            this.initialize();
-        } else if (!this.win.isFocused()) {            
-            this.win.show();  
-        }
-    }
 
     public close() {
         this.win.hide();
@@ -27,6 +20,14 @@ export class SettingWindow {
             return false;
         }
 
+    }
+
+    public show() {
+        if (this.win === null) {
+            this.initialize();
+        } else if (!this.win.isFocused()) {            
+            this.win.show();  
+        }
     }
 
     public isDestroyed() {
@@ -55,22 +56,30 @@ export class SettingWindow {
             },
             // title: "Setting",
             // darkTheme: true,
-            ...this.size,
+            // ...this.size,
+            frame: false,
+            transparent: true,
             show: false,
-            resizable: false,
-            maximizable: false,
+            // resizable: false,
+            // maximizable: false,
+            alwaysOnTop: true,
             icon: path.join(__dirname, '../../assets/settings.png'),
         },
         );
         // this.win.webContents.openDevTools();
         this.win.removeMenu();
 
-        this.win.loadURL('file://' + path.join(__dirname, '../../src/Frontend/Settings/index.html'));
-        // this.win.loadURL('http://localhost:4201');
-
+        this.win.loadURL('file://' + path.join(__dirname, '../../src/Frontend/Splash/index.html'));
         this.win.once('ready-to-show', () => {
-            this.win.show();
+            this.win.show();  
         });
+
+        this.win.on('show', async () => {
+            setTimeout(() => {
+                this.win.destroy();
+            }, 4000);
+        });
+
 
         this.win.once('close', () => {
             this.win = null;

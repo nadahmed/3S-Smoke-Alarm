@@ -4,19 +4,18 @@ import * as eu from 'electron-util';
 import * as mqtt from 'mqtt';
 import * as path from 'path';
 import { ButtonStatus, JDSD51 } from './decoder/jdsd51.decoder';
-import { IConfig, MqttMessage, MqttEvent } from './utils/config.type';
-import { defaultConfig } from './utils/default_config';
+import { IConfig, MqttMessage, MqttEvent, IConfigV2 } from './utils/config.type';
+import { defaultConfigV2 } from './utils/default_config';
 import { MQTTEventManager } from './utils/mqttEvent';
 import { MyPlayer } from './utils/playAlert';
 import { SettingWindow } from './Views/settingWindow';
 import { SystemTray } from './Views/tray.view';
 import { ViewerWindow } from './Views/viewerWindow';
+import { JDSD51DecodeError } from './decoder/jdsd51.error';
 
 
 const store = new Store();
 const mqttevent = new MQTTEventManager();
-
-
 
 ipcMain.on('mqtt-event-initial', async (event, _) => {
     const objs = await mqttevent.all();
@@ -30,29 +29,38 @@ ipcMain.on('mqtt-event-removeAll', async (event, _) => {
     dialog.showMessageBox(BrowserWindow.fromId(event.frameId) , {title: 'Event Message Removed', message: n + ' Records were removed!'});
 });
 
-ipcMain.on('save-configuration', ( _, form: IConfig) => {
-    store.set('config', form);
+ipcMain.on('save-configuration', ( _, form: IConfigV2) => {
+    store.set('configV2', form);
 });
 
 ipcMain.on('get-default-configuration',  (event) => {
-    event.returnValue = defaultConfig;
+    event.returnValue = defaultConfigV2;
 });
 
 ipcMain.on('get-server-settings', (event) => {
-    const conf: IConfig = store.get('config', defaultConfig);
+    const conf: IConfigV2 = store.get('configV2', defaultConfigV2);
     event.sender.send('server-settings', conf);
 });
 
-let config: IConfig = store.get('config', defaultConfig);
+
+const config: IConfig = store.get('config', null);
+let configV2: IConfigV2 = store.get('configV2', null);
+
+if (!config && !configV2) {
+    configV2 = defaultConfigV2;
+} else if (!!config && !configV2 ) {
+    configV2 = defaultConfigV2;
+    configV2.meta.applicationId = config.topic.application_id;
+    configV2.server.mqtt.host = config.server.host;
+    configV2.server.mqtt.port = config.server.port;
+    configV2.server.mqtt.username = config.server.username;
+    configV2.server.mqtt.password = config.server.password;
+    configV2.server.restApi.host = config.server.host;
+    store.set('configV2', configV2);
+}
 
 let topic = '';
-try {
-    topic = 'application/' + config.meta.applicationId + '/device/+/rx';
-} catch {
-    config = defaultConfig;
-    store.set('config', config);
-    topic = 'application/' + config.meta.applicationId + '/device/+/rx';
-}
+topic = 'application/' + configV2.meta.applicationId + '/device/+/rx';
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -65,19 +73,22 @@ app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
 
 
 
-app.on('ready', () => {
+app.on('ready', async () => {
 
-    const audioFile = eu.fixPathForAsarUnpack(path.join(__dirname, '../player/alert.wav'));
+    // const splashWindow = new SplashWindow();
+    // splashWindow.show();
 
-    console.log(audioFile);
+    const audioFile = eu.fixPathForAsarUnpack(path.resolve(__dirname, '../player/alert.wav'));
+
     const player = new MyPlayer(audioFile);
 
+
     const client = mqtt.connect(null, {
-        username: config.server.mqtt.username,
-        password: config.server.mqtt.password,
+        username: configV2.server.mqtt.username,
+        password: configV2.server.mqtt.password,
         servers: [{
-            host: config.server.mqtt.host,
-            port: config.server.mqtt.port,
+            host: configV2.server.mqtt.host,
+            port: configV2.server.mqtt.port,
             protocol: 'mqtt',
         }],
 
@@ -100,64 +111,57 @@ app.on('ready', () => {
 
     client.on('message', async (_, message) => {
         const obj: MqttMessage = JSON.parse(message.toString());
-///////////////////////////////////////////////
-        const count = await mqttevent.count();
+
+        console.log('[MQTT PARSED DATA]: ', obj.data);
+
+        let alarm: JDSD51 = null;
+        try {
+            alarm = new JDSD51(obj.data);
+            if (alarm.status.buttonStatus === ButtonStatus.Test) {
+                player.kill();
+                player.play();
+            }
+            
+            if (alarm.status.isSmokeDetected && (alarm.status.buttonStatus === ButtonStatus.Normal)) {
+                player.playLoop();
+            }
+
+            if (alarm.status.isSmokeDetected && (alarm.status.buttonStatus === ButtonStatus.Silenced)) {
+                player.kill();
+            }
+
+            if (!alarm.status.isSmokeDetected && (alarm.status.buttonStatus === ButtonStatus.Normal)) {
+                player.kill();
+            }
+            
+
+        } catch (e) {
+            if (e instanceof JDSD51DecodeError) {
+                console.log('[JDSD51 Parse ERROR] ', e.name);
+                alarm = null;
+            } else { console.error(e); }
+
+        }
+
         const objEvent: MqttEvent = {
-            _id: count,
             time: Date.now(),
             ...obj,
         };
         mqttevent.insertData(objEvent);
-//////////////////////////////////////////////////
+
+
         if (!viewerWindow.isClosed()) {
             viewerWindow.getBrowserWindow().webContents.send('mqtt-message', obj);
             viewerWindow.getBrowserWindow().webContents.send('mqtt-event', objEvent);
         }
 
-        const alarm = new JDSD51(obj.data);
-        console.log('[MQTT PARSED DATA]: ', obj.data);
-        if (alarm.status.buttonStatus === ButtonStatus.Test) {
-            player.kill();
-            player.play();
-        }
-        
-        if (alarm.status.isSmokeDetected && (alarm.status.buttonStatus === ButtonStatus.Silenced)) {
-            player.kill();
-        }
-        
-        if (alarm.status.isSmokeDetected) {
-            player.playLoop();
-        }
-
-        // switch (obj.data) {
-
-        //     case "AgAB":
-        //         player.kill();
-        //         await player.play();
-        //         break;
-
-        //     case "AgQA":
-        //         player.kill();
-        //         await player.playLoop();
-        //         break;
-
-        //     case "AgQC":
-        //         player.kill();
-        //         break;
-
-        //     // case "AgAA":
-        //     //     player.kill();
-        //     //     await player.play();
-        //     //     break;
-        //     default:
-        //         break;
-        // }
     });
 
     const sTray = new SystemTray();
     const viewerWindow = new ViewerWindow();
     const settingsWindow = new SettingWindow();
     
+
     sTray.onClickOpenViewer(() => {
         viewerWindow.show();
     });
