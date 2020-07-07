@@ -8,11 +8,18 @@
     },
     "new-parens": true,
     "no-arg": true,
-    "no-bitwise": true,
+    "no-bitwise": false,
     "no-conditional-assignment": true,
     "no-consecutive-blank-lines": false,
     "object-literal-sort-keys": false,
-    "no-trailing-whitespace": false
+    "no-trailing-whitespace": false,
+    "interface-name":false,
+    "ordered-imports":false,
+    "quotemark": [
+        true,
+        "single"
+      ],
+      "no-console": false
   },
   "jsRules": {
     "max-line-length": {
