@@ -71,8 +71,8 @@ export class SystemTray {
     constructor() {
         this.tray = new Tray(path.join(__dirname, '../../assets/alarm-red.png'));
         
-        this.tray.setTitle( app.getName() + ' v' + app.getVersion());
-        this.tray.setToolTip( app.getName() + ' v' + app.getVersion());
+        this.tray.setTitle( app.name + ' v' + app.getVersion());
+        this.tray.setToolTip( app.name + ' v' + app.getVersion());
         this.tray.setContextMenu(this.contextMenu);
         this.tray.on('click', () => {
             this.tray.popUpContextMenu(this.contextMenu);

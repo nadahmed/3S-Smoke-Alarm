@@ -63,6 +63,7 @@ let topic = '';
 topic = 'application/' + configV2.meta.applicationId + '/device/+/rx';
 
 const gotTheLock = app.requestSingleInstanceLock();
+app.allowRendererProcessReuse = true;
 
 if (!gotTheLock) {
     dialog.showErrorBox('Multiple instance detected', 'Another instance of this app is already running.');

@@ -2,7 +2,9 @@
     "productName": "3S Smoke Alarm",
     "name": "sssmokealarm",
     "version": "1.1.0",
-    "authors" : ["Noor Al Din Ahmed <nooraldinahmed@gmail.com>"],
+    "authors": [
+        "Noor Al Din Ahmed <nooraldinahmed@gmail.com>"
+    ],
     "description": "JD-SD51 Smoke Alarm Software",
     "main": "dist/main.js",
     "scripts": {
@@ -27,7 +29,7 @@
     "author": "Hivecore.io",
     "license": "MIT",
     "devDependencies": {
-        "electron": "^6.1.12",
+        "electron": "^8.2.4",
         "electron-packager": "^14.2.1",
         "rimraf": "^3.0.2",
         "tslint": "^5.19.0",
