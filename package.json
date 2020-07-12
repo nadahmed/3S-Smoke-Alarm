@@ -42,6 +42,7 @@
         "electron-db": "^1.0.0",
         "electron-store": "^5.1.0",
         "electron-util": "^0.13.1",
+        "lora-smoke-decoder": "0.0.1",
         "mqtt": "^3.0.0",
         "nedb": "^1.8.0",
         "node-mp3-player": "^1.0.3",

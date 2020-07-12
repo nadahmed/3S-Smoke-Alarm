@@ -3,7 +3,6 @@ import * as Store from 'electron-store';
 import * as eu from 'electron-util';
 import * as mqtt from 'mqtt';
 import * as path from 'path';
-import { ButtonStatus, JDSD51 } from './decoder/jdsd51.decoder';
 import { IConfig, MqttMessage, MqttEvent, IConfigV2 } from './utils/config.type';
 import { defaultConfigV2 } from './utils/default_config';
 import { MQTTEventManager } from './utils/mqttEvent';
@@ -11,7 +10,8 @@ import { MyPlayer } from './utils/playAlert';
 import { SettingWindow } from './Views/settingWindow';
 import { SystemTray } from './Views/tray.view';
 import { ViewerWindow } from './Views/viewerWindow';
-import { JDSD51DecodeError } from './decoder/jdsd51.error';
+import { AutoDecoder } from 'lora-smoke-decoder';
+import { DecoderError } from 'lora-smoke-decoder/errors';
 
 
 const store = new Store();
@@ -59,8 +59,7 @@ if (!config && !configV2) {
     store.set('configV2', configV2);
 }
 
-let topic = '';
-topic = 'application/' + configV2.meta.applicationId + '/device/+/rx';
+const topic = 'application/' + configV2.meta.applicationId + '/device/+/rx';
 
 const gotTheLock = app.requestSingleInstanceLock();
 app.allowRendererProcessReuse = true;
@@ -115,30 +114,27 @@ app.on('ready', async () => {
 
         console.log('[MQTT PARSED DATA]: ', obj.data);
 
-        let alarm: JDSD51 = null;
+        let alarm: AutoDecoder = null;
         try {
-            alarm = new JDSD51(obj.data);
-            if (alarm.status.buttonStatus === ButtonStatus.Test) {
+            alarm = new AutoDecoder(obj.data);
+            
+            if (alarm.isSmokeDetected()) {
+                player.playLoop();
+            }
+
+            if (!alarm.isSmokeDetected()) {
+                player.kill();
+            }
+
+            if (alarm.isButtonPressed()) {
                 player.kill();
                 player.play();
             }
             
-            if (alarm.status.isSmokeDetected && (alarm.status.buttonStatus === ButtonStatus.Normal)) {
-                player.playLoop();
-            }
-
-            if (alarm.status.isSmokeDetected && (alarm.status.buttonStatus === ButtonStatus.Silenced)) {
-                player.kill();
-            }
-
-            if (!alarm.status.isSmokeDetected && (alarm.status.buttonStatus === ButtonStatus.Normal)) {
-                player.kill();
-            }
-            
 
         } catch (e) {
-            if (e instanceof JDSD51DecodeError) {
-                console.log('[JDSD51 Parse ERROR] ', e.name);
+            if (e instanceof DecoderError) {
+                console.log('[Decoder Parse ERROR] ', e.name);
                 alarm = null;
             } else { console.error(e); }
 
