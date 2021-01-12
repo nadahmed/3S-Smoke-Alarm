@@ -8,6 +8,7 @@ import { defaultConfigV2 } from './utils/default_config';
 import { MQTTEventManager } from './utils/mqttEvent';
 import { MyPlayer } from './utils/playAlert';
 import { SettingWindow } from './Views/settingWindow';
+import { SplashWindow } from './Views/splashWindow';
 import { SystemTray } from './Views/tray.view';
 import { ViewerWindow } from './Views/viewerWindow';
 import { AutoDecoder } from 'lora-smoke-decoder';
@@ -75,8 +76,8 @@ app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
 
 app.on('ready', async () => {
 
-    // const splashWindow = new SplashWindow();
-    // splashWindow.show();
+    const splashWindow = new SplashWindow();
+    splashWindow.show();
 
     const audioFile = eu.fixPathForAsarUnpack(path.resolve(__dirname, '../player/alert.wav'));
 
