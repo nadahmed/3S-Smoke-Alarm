@@ -1,4 +1,4 @@
-import {app, BrowserWindow} from 'electron';
+import {BrowserWindow} from 'electron';
 import * as path from 'path';
 
 export class SplashWindow {
@@ -63,7 +63,7 @@ export class SplashWindow {
             // resizable: false,
             // maximizable: false,
             alwaysOnTop: true,
-            icon: path.join(__dirname, '../../assets/settings.png'),
+            icon: path.join(__dirname, '../../assets/alert.ico'),
         },
         );
         // this.win.webContents.openDevTools();

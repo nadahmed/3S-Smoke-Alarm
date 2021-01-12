@@ -2,3 +2,4 @@ node_modules
 dist
 3S Smoke Alarm-win32-x64*
 releases
+test.js
