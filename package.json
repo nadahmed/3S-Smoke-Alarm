@@ -29,7 +29,7 @@
     "author": "Hivecore.io",
     "license": "MIT",
     "devDependencies": {
-        "electron": "^8.5.2",
+        "electron": "^15.5.5",
         "electron-packager": "^14.2.1",
         "rimraf": "^3.0.2",
         "tslint": "^5.19.0",
