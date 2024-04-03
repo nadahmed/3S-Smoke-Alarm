@@ -1316,15 +1316,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /* harmony import */ var lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lora-smoke-decoder */ "./node_modules/lora-smoke-decoder/lora-smoke-decoder.js");
 /* harmony import */ var lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var lora_smoke_decoder_interfaces__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lora-smoke-decoder/interfaces */ "./node_modules/lora-smoke-decoder/interfaces.js");
-/* harmony import */ var lora_smoke_decoder_interfaces__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(lora_smoke_decoder_interfaces__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var lora_smoke_decoder_errors__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! lora-smoke-decoder/errors */ "./node_modules/lora-smoke-decoder/errors.js");
-/* harmony import */ var lora_smoke_decoder_errors__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(lora_smoke_decoder_errors__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _angular_material_table__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/material/table */ "./node_modules/@angular/material/fesm5/table.js");
-/* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! electron */ "electron");
-/* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(electron__WEBPACK_IMPORTED_MODULE_5__);
-
-
+/* harmony import */ var _angular_material_table__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/material/table */ "./node_modules/@angular/material/fesm5/table.js");
+/* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! electron */ "electron");
+/* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(electron__WEBPACK_IMPORTED_MODULE_3__);
 
 
 
@@ -1334,7 +1328,7 @@ var EventlogComponent = /** @class */ (function () {
         this.ipc = ipc;
         this.ref = ref;
         this.logs = [];
-        this.dataSource = new _angular_material_table__WEBPACK_IMPORTED_MODULE_4__["MatTableDataSource"]();
+        this.dataSource = new _angular_material_table__WEBPACK_IMPORTED_MODULE_2__["MatTableDataSource"]();
         // dataSource: MqttStuff[] = [];
         this.columnsToDisplay = ['time', 'deviceName', 'devEUI', 'status'];
         this.columnsList = { time: 'Time', deviceName: 'Device Name', devEUI: 'Device EUI', status: 'Status' };
@@ -1354,44 +1348,43 @@ var EventlogComponent = /** @class */ (function () {
         var status = null;
         try {
             var smoke = new lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_1__["AutoDecoder"](obj.data);
+            console.log(smoke);
             var buttonMeta = { tooltip: '', icon: '' };
-            buttonMeta.tooltip = 'Button ' + smoke.status.buttonStatus;
-            if (smoke.status.buttonStatus === lora_smoke_decoder_interfaces__WEBPACK_IMPORTED_MODULE_2__["ButtonStatus"].Normal) {
-                buttonMeta.icon = 'check';
-            }
-            else if (smoke.status.buttonStatus === lora_smoke_decoder_interfaces__WEBPACK_IMPORTED_MODULE_2__["ButtonStatus"].Silenced) {
-                buttonMeta.icon = 'volume_off';
-            }
-            else if (smoke.status.buttonStatus === lora_smoke_decoder_interfaces__WEBPACK_IMPORTED_MODULE_2__["ButtonStatus"].Test) {
-                buttonMeta.icon = 'touch_app';
-            }
-            else {
-                buttonMeta.tooltip = 'Button status Unkown';
-                buttonMeta.icon = 'error';
-            }
+            buttonMeta.tooltip = 'Button ' + 'Pressed';
+            // if (smoke.status.buttonStatus === ButtonStatus.Normal) {
+            buttonMeta.icon = 'check';
+            // } else if (smoke.status.buttonStatus === ButtonStatus.Silenced) {
+            //     buttonMeta.icon = 'volume_off';
+            // } else if (smoke.status.buttonStatus === ButtonStatus.Test) {
+            //     buttonMeta.icon = 'touch_app';
+            // } else {
+            //     buttonMeta.tooltip = 'Button status Unkown';
+            //     buttonMeta.icon = 'error';
+            // }
             status = {
                 // tslint:disable-next-line: max-line-length
-                battery: smoke.status.isLowBattery ? { tooltip: 'Battery Low', icon: 'battery_alert' } : { tooltip: 'Battery OK', icon: 'check' },
+                battery: smoke.isBatteryLow() ? { tooltip: 'Battery Low', icon: 'battery_alert' } : { tooltip: 'Battery OK', icon: 'check' },
                 button: buttonMeta,
-                fault: smoke.status.isFaulty ? { tooltip: 'Faulty', icon: 'warning' } : { tooltip: 'No fault', icon: 'check' },
-                tampered: smoke.status.isTampered ? { tooltip: 'Being Demolished', icon: 'warning' } : { tooltip: 'Alarm OK', icon: 'check' },
+                fault: smoke.isFaulty() ? { tooltip: 'Faulty', icon: 'warning' } : { tooltip: 'No fault', icon: 'check' },
+                tampered: smoke.isFaulty() ? { tooltip: 'Being Demolished', icon: 'warning' } : { tooltip: 'Alarm OK', icon: 'check' },
                 // tslint:disable-next-line: max-line-length
-                smokeDetected: smoke.status.isSmokeDetected ? { tooltip: 'Smoke Detected', icon: 'directions_run' } : { tooltip: 'No smoke', icon: 'check' },
+                smokeDetected: smoke.isSmokeDetected() ? { tooltip: 'Smoke Detected', icon: 'directions_run' } : { tooltip: 'No smoke', icon: 'check' },
             };
         }
         catch (e) {
-            if ((e instanceof lora_smoke_decoder_errors__WEBPACK_IMPORTED_MODULE_3__["DecoderError"]) || (e instanceof TypeError)) {
-                status = {
-                    battery: { tooltip: 'Unknown', icon: 'help_outline' },
-                    button: { tooltip: 'Unknown', icon: 'help_outline' },
-                    fault: { tooltip: 'Unknown', icon: 'help_outline' },
-                    tampered: { tooltip: 'Unknown', icon: 'help_outline' },
-                    smokeDetected: { tooltip: 'Unknown', icon: 'help_outline' },
-                };
-            }
-            else {
-                console.error(e);
-            }
+            console.error(e);
+            // if ((e instanceof DecoderError) || (e instanceof TypeError)) {
+            status = {
+                battery: { tooltip: 'Unknown', icon: 'help_outline' },
+                button: { tooltip: 'Unknown', icon: 'help_outline' },
+                // fault: {tooltip: 'Unknown', icon: 'help_outline'},
+                fault: { tooltip: 'No fault', icon: 'check' },
+                tampered: { tooltip: 'Unknown', icon: 'help_outline' },
+                smokeDetected: { tooltip: 'Unknown', icon: 'help_outline' },
+            };
+            // } else {
+            //     console.error(e);
+            // }
         }
         var log = {
             deviceName: obj.deviceName,
@@ -1417,7 +1410,7 @@ var EventlogComponent = /** @class */ (function () {
             var result;
             return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, electron__WEBPACK_IMPORTED_MODULE_5__["remote"].dialog.showMessageBox({
+                    case 0: return [4 /*yield*/, electron__WEBPACK_IMPORTED_MODULE_3__["remote"].dialog.showMessageBox({
                             title: 'Remove Records',
                             type: 'warning',
                             message: 'Are you sure you want to remove all the records permanently?',
