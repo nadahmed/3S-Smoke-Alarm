@@ -331,152 +331,6 @@ var Alarm = /** @class */ (function () {
 
 /***/ }),
 
-/***/ "./src/app/alarm-object/decoder/decoder.ts":
-/*!*************************************************!*\
-  !*** ./src/app/alarm-object/decoder/decoder.ts ***!
-  \*************************************************/
-/*! exports provided: Decoder */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Decoder", function() { return Decoder; });
-var Decoder = /** @class */ (function () {
-    function Decoder(base64Data) {
-        this.base64Data = base64Data;
-        this.byteArray = this.base64decode(base64Data);
-    }
-    Decoder.prototype.base64decode = function (base64) {
-        var binaryString = Buffer.from(base64, "base64").toString();
-        var len = binaryString.length;
-        var bytes = new Uint8Array(len);
-        for (var i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes.buffer;
-    };
-    return Decoder;
-}());
-
-
-
-/***/ }),
-
-/***/ "./src/app/alarm-object/decoder/jdsd51.decoder.ts":
-/*!********************************************************!*\
-  !*** ./src/app/alarm-object/decoder/jdsd51.decoder.ts ***!
-  \********************************************************/
-/*! exports provided: ButtonStatus, JDSD51 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ButtonStatus", function() { return ButtonStatus; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "JDSD51", function() { return JDSD51; });
-/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
-/* harmony import */ var _decoder__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./decoder */ "./src/app/alarm-object/decoder/decoder.ts");
-/* harmony import */ var _jdsd51_error__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./jdsd51.error */ "./src/app/alarm-object/decoder/jdsd51.error.ts");
-
-
-
-var ButtonStatus;
-(function (ButtonStatus) {
-    ButtonStatus["Normal"] = "Normal";
-    ButtonStatus["Test"] = "Test";
-    ButtonStatus["Silenced"] = "Silenced";
-})(ButtonStatus || (ButtonStatus = {}));
-var JDSD51 = /** @class */ (function (_super) {
-    Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__extends"])(JDSD51, _super);
-    function JDSD51(base64Data) {
-        var _this = _super.call(this, base64Data) || this;
-        _this.decode(_this.byteArray);
-        return _this;
-    }
-    JDSD51.prototype.getVersion = function () {
-        return this.versionByte.toPrecision(3);
-    };
-    JDSD51.prototype.isSmokeDetected = function () {
-        var smokeDetected = this.detectionTypeByte & 0x04;
-        return !!smokeDetected;
-    };
-    JDSD51.prototype.isFaulty = function () {
-        var fault = this.statusByte & 0x40;
-        return !!fault;
-    };
-    JDSD51.prototype.isLowBattery = function () {
-        var lowBattery = this.statusByte & 0x10;
-        return !!lowBattery;
-    };
-    JDSD51.prototype.isTampered = function () {
-        var tampered = this.statusByte & 0x08;
-        return !!tampered;
-    };
-    JDSD51.prototype.getButtonStatus = function () {
-        if (!!(this.statusByte & 0x01)) {
-            return ButtonStatus.Test;
-        }
-        else if (!!(this.statusByte & 0x02)) {
-            return ButtonStatus.Silenced;
-        }
-        else {
-            return ButtonStatus.Normal;
-        }
-    };
-    JDSD51.prototype.decode = function (byteArray) {
-        var data = new DataView(byteArray);
-        if (byteArray.byteLength !== 3) {
-            throw new _jdsd51_error__WEBPACK_IMPORTED_MODULE_2__["JDSD51DecodeError"]();
-        }
-        this.versionByte = data.getUint8(0);
-        this.detectionTypeByte = data.getUint8(1);
-        this.statusByte = data.getUint8(2);
-        if (this.versionByte !== 2) {
-            throw new _jdsd51_error__WEBPACK_IMPORTED_MODULE_2__["JDSD51DecodeError"]();
-        }
-        this.status = {
-            buttonStatus: this.getButtonStatus(),
-            isFaulty: this.isFaulty(),
-            isLowBattery: this.isLowBattery(),
-            isSmokeDetected: this.isSmokeDetected(),
-            isTampered: this.isTampered(),
-            version: this.getVersion(),
-        };
-    };
-    return JDSD51;
-}(_decoder__WEBPACK_IMPORTED_MODULE_1__["Decoder"]));
-
-
-
-/***/ }),
-
-/***/ "./src/app/alarm-object/decoder/jdsd51.error.ts":
-/*!******************************************************!*\
-  !*** ./src/app/alarm-object/decoder/jdsd51.error.ts ***!
-  \******************************************************/
-/*! exports provided: JDSD51DecodeError */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "JDSD51DecodeError", function() { return JDSD51DecodeError; });
-/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
-
-var JDSD51DecodeError = /** @class */ (function (_super) {
-    Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__extends"])(JDSD51DecodeError, _super);
-    function JDSD51DecodeError() {
-        var _this = _super.call(this) || this;
-        _this.name = 'JDSD51DecodeError';
-        _this.message = 'The data does not seem like it\'s comming from JD-SD51 model';
-        Object.setPrototypeOf(_this, JDSD51DecodeError.prototype);
-        return _this;
-    }
-    return JDSD51DecodeError;
-}(Error));
-
-
-
-/***/ }),
-
 /***/ "./src/app/alarmtable/alarmtable.component.ngfactory.js":
 /*!**************************************************************!*\
   !*** ./src/app/alarmtable/alarmtable.component.ngfactory.js ***!
@@ -1952,8 +1806,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
 /* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! electron */ "electron");
 /* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(electron__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var _alarm_object_decoder_jdsd51_decoder__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../alarm-object/decoder/jdsd51.decoder */ "./src/app/alarm-object/decoder/jdsd51.decoder.ts");
-/* harmony import */ var _alarm_object_decoder_jdsd51_error__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../alarm-object/decoder/jdsd51.error */ "./src/app/alarm-object/decoder/jdsd51.error.ts");
+/* harmony import */ var lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! lora-smoke-decoder */ "./node_modules/lora-smoke-decoder/lora-smoke-decoder.js");
+/* harmony import */ var lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var lora_smoke_decoder_errors__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! lora-smoke-decoder/errors */ "./node_modules/lora-smoke-decoder/errors.js");
+/* harmony import */ var lora_smoke_decoder_errors__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(lora_smoke_decoder_errors__WEBPACK_IMPORTED_MODULE_6__);
 
 
 
@@ -1983,33 +1839,36 @@ var ViewerComponent = /** @class */ (function () {
             return alrm.device.devEUI === obj.devEUI;
         });
         try {
-            var smoke = new _alarm_object_decoder_jdsd51_decoder__WEBPACK_IMPORTED_MODULE_5__["JDSD51"](obj.data);
-            if (smoke.status.buttonStatus === _alarm_object_decoder_jdsd51_decoder__WEBPACK_IMPORTED_MODULE_5__["ButtonStatus"].Test) {
+            var smoke = new lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_5__["AutoDecoder"](obj.data);
+            if (smoke.isButtonPressed()) {
                 alarm.blinkFor(5000, 200, this.ref);
             }
-            if (!smoke.status.isSmokeDetected && smoke.status.buttonStatus === _alarm_object_decoder_jdsd51_decoder__WEBPACK_IMPORTED_MODULE_5__["ButtonStatus"].Normal) {
+            if (!smoke.isSmokeDetected() && !smoke.isButtonPressed()) {
                 alarm.blinkStop();
                 alarm.normalState();
             }
-            if (smoke.status.isSmokeDetected && (smoke.status.buttonStatus === _alarm_object_decoder_jdsd51_decoder__WEBPACK_IMPORTED_MODULE_5__["ButtonStatus"].Normal)) {
+            if (smoke.isSmokeDetected() && (smoke.isButtonPressed())) {
                 alarm.blink(200, this.ref);
             }
-            if (smoke.status.isSmokeDetected && (smoke.status.buttonStatus === _alarm_object_decoder_jdsd51_decoder__WEBPACK_IMPORTED_MODULE_5__["ButtonStatus"].Silenced)) {
+            if (smoke.isSmokeDetected() && smoke.isButtonPressed()) {
                 alarm.blinkStop();
             }
-            if (smoke.status.isLowBattery) {
+            if (smoke.isBatteryLow()) {
                 alarm.lowBatteryAlert(this.ref);
             }
-            if (smoke.status.isFaulty) {
+            if (smoke.isFaulty()) {
                 alarm.warningState();
             }
-            if (smoke.status.isTampered) {
+            if (smoke.isFaulty()) {
                 alarm.warningState();
             }
         }
         catch (e) {
-            if (!(e instanceof _alarm_object_decoder_jdsd51_error__WEBPACK_IMPORTED_MODULE_6__["JDSD51DecodeError"])) {
-                console.error(e);
+            if (!(e instanceof lora_smoke_decoder_errors__WEBPACK_IMPORTED_MODULE_6__["DecoderError"])) {
+                console.error("Decoder Error: ", e);
+            }
+            else {
+                console.log(e);
             }
         }
     };
