@@ -143,10 +143,12 @@ app.on('ready', async () => {
 
         }
 
+        const time = new Date(obj['rxInfo'][0]['nsTime']);
         const objEvent: MqttEvent = {
-            time: Date.now(),
             ...obj,
         };
+        objEvent.time = time.toString();
+        console.log('objEvent', objEvent);
         objEvent.devEUI = objEvent.devEUI ? objEvent.devEUI: obj['deviceInfo']['devEui'];
         objEvent.applicationName = objEvent.applicationName ? objEvent.applicationName: obj['deviceInfo']['applicationName'];
         objEvent.deviceName = objEvent.deviceName ? objEvent.deviceName: obj['deviceInfo']['deviceName'];

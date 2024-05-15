@@ -71,5 +71,5 @@ export interface MqttMessage {
 
 export interface MqttEvent extends MqttMessage {
     _id?: number;
-    time: number;
+    time: string;
 }
