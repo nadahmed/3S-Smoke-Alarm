@@ -109,7 +109,7 @@ var AuthInterceptor = /** @class */ (function () {
         // We clone the request, because the original request is immutable
         return request.clone({
             setHeaders: {
-                Authorization: this.auth.getJWTToken()
+                'Grpc-Metadata-Authorization': this.auth.getJWTToken()
             }
         });
     };
@@ -659,12 +659,23 @@ var ApiService = /** @class */ (function () {
         var _this = this;
         return this.getConfig().pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_2__["switchMap"])(function (config) {
             console.log(config);
-            return _this.http.post(
-            // tslint:disable-next-line: max-line-length
-            config.server.restApi.scheme + config.server.restApi.host + ':' + config.server.restApi.port + config.server.restApi.uriLogin, { username: config.server.restApi.username, password: config.server.restApi.password }).pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_2__["tap"])(function (token) {
-                _this.setJWTToken(token);
+            var token = { jwt: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJjaGlycHN0YWNrIiwiaXNzIjoiY2hpcnBzdGFjayIsInN1YiI6ImUyM2YwYmIxLWU4MGQtNDA0Ni1iZjVkLTIzYTc3MTM3ZmQ0MCIsInR5cCI6ImtleSJ9.sFNfwOSkdFqzDMHDk53X3Vm8V7VB30C4d28Vt4t-UO0' };
+            _this.setJWTToken(token);
+            return _this.http.get(config.server.restApi.scheme + config.server.restApi.host + ':' + config.server.restApi.port + config.server.restApi.uriLogin, { headers: {
+                    'Grpc-Metadata-Authorization': 'Bearer ' + _this.getJWTToken(),
+                }
+            }).pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_2__["tap"])(function (_) {
                 console.log('Login Complete');
             }));
+            // return this.http.post<{ jwt: string }>(
+            //     // tslint:disable-next-line: max-line-length
+            //     config.server.restApi.scheme + config.server.restApi.host + ':' + config.server.restApi.port + config.server.restApi.uriLogin,
+            //     { username: config.server.restApi.username, password: config.server.restApi.password }).pipe(
+            //         tap(token => {
+            //             this.setJWTToken(token);
+            //             console.log('Login Complete');
+            //         })
+            //     );
         }));
     };
     Object.defineProperty(ApiService.prototype, "config", {
@@ -698,15 +709,46 @@ var ApiService = /** @class */ (function () {
         configurable: true
     });
     ApiService.prototype.getAllDevices = function () {
+        var _this = this;
         var rest = this.config.server.restApi;
         return this.http.get(
         // 'https://' + this.ip + '/api/devices?limit=100&offset=0'
         // 'https://192.168.0.3:8080/api/devices?limit=100&offset=0'
-        rest.scheme + rest.host + ':' + rest.port + '/api/devices?limit=100&applicationID=' + this.config.meta.applicationId, {
+        rest.scheme + rest.host + ':' + rest.port + '/api/devices?limit=100&applicationId=' + this.config.meta.applicationId, {
             headers: {
-                Authorization: 'Bearer ' + this.getJWTToken(),
+                'Grpc-Metadata-Authorization': 'Bearer ' + this.getJWTToken(),
             }
-        });
+        }).pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_2__["map"])(function (devices) {
+            console.log(devices);
+            // const _result:Device[] = devices.results;
+            var _devices = devices.result.map(function (device) {
+                return {
+                    devEUI: device['devEui'],
+                    name: device['name'],
+                    lastSeenAt: device['lastSeenAt'] ? device['lastSeenAt'] : '-',
+                    profileName: device['deviceProfileName'],
+                    appName: device['appName'],
+                    applicationID: _this.config.meta.applicationId,
+                    description: device['description'],
+                    fCntUp: device['fCntUp'],
+                    fCntDown: device['fCntDown'],
+                    appKey: device['appKey'],
+                    devAddr: device['devAddr'],
+                    appSKey: device['appSKey'],
+                    nwkSKey: device['nwkSKey'],
+                    deviceProfileID: device['deviceProfileID'],
+                    deviceStatus: device['deviceStatus'],
+                    deviceStatusBattery: device['deviceStatusBattery'],
+                    deviceStatusBatteryLevel: device['deviceStatus'] ? device['deviceStatus']['batteryLevel'] : null,
+                    deviceStatusMargin: device['deviceStatus'] ? device['deviceStatus']['margin'] : null,
+                };
+            });
+            var _result = JSON.parse(JSON.stringify(_devices));
+            return {
+                result: _result,
+                devices: _devices
+            };
+        }));
     };
     ApiService.ɵprov = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineInjectable"]({ factory: function ApiService_Factory() { return new ApiService(_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵinject"](_angular_common_http__WEBPACK_IMPORTED_MODULE_4__["HttpClient"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵinject"](_ipc_ipc_service__WEBPACK_IMPORTED_MODULE_5__["IpcService"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵinject"](_angular_router__WEBPACK_IMPORTED_MODULE_6__["Router"])); }, token: ApiService, providedIn: "root" });
     return ApiService;
@@ -1195,7 +1237,9 @@ var EventlogComponent = /** @class */ (function () {
     };
     EventlogComponent.prototype.ngAfterViewInit = function () { };
     EventlogComponent.prototype.handler = function (_, message) {
+        console.log('[MQTT]', message);
         var obj = message;
+        console.log('[EVENT]', obj);
         var rawObj = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, obj);
         delete rawObj._id;
         delete rawObj.time;
@@ -1209,12 +1253,14 @@ var EventlogComponent = /** @class */ (function () {
             buttonMeta.icon = 'check';
             // } else if (smoke.status.buttonStatus === ButtonStatus.Silenced) {
             //     buttonMeta.icon = 'volume_off';
-            // } else if (smoke.status.buttonStatus === ButtonStatus.Test) {
-            //     buttonMeta.icon = 'touch_app';
-            // } else {
-            //     buttonMeta.tooltip = 'Button status Unkown';
-            //     buttonMeta.icon = 'error';
-            // }
+            // } else 
+            if (smoke.isButtonPressed()) {
+                buttonMeta.icon = 'touch_app';
+            }
+            else {
+                buttonMeta.tooltip = 'Button status Unkown';
+                buttonMeta.icon = 'error';
+            }
             status = {
                 // tslint:disable-next-line: max-line-length
                 battery: smoke.isBatteryLow() ? { tooltip: 'Battery Low', icon: 'battery_alert' } : { tooltip: 'Battery OK', icon: 'check' },
@@ -1232,7 +1278,7 @@ var EventlogComponent = /** @class */ (function () {
                 battery: { tooltip: 'Unknown', icon: 'help_outline' },
                 button: { tooltip: 'Unknown', icon: 'help_outline' },
                 // fault: {tooltip: 'Unknown', icon: 'help_outline'},
-                fault: { tooltip: 'No fault', icon: 'check' },
+                fault: { tooltip: 'Unknown', icon: 'help_outline' },
                 tampered: { tooltip: 'Unknown', icon: 'help_outline' },
                 smokeDetected: { tooltip: 'Unknown', icon: 'help_outline' },
             };
@@ -1836,7 +1882,8 @@ var ViewerComponent = /** @class */ (function () {
     ViewerComponent.prototype.mqttMessageHandler = function (_, message) {
         var obj = message;
         var alarm = this.alarms.find(function (alrm) {
-            return alrm.device.devEUI === obj.devEUI;
+            console.log(alrm.device.devEUI, obj.deviceInfo.devEui);
+            return alrm.device.devEUI === obj.deviceInfo.devEui;
         });
         try {
             var smoke = new lora_smoke_decoder__WEBPACK_IMPORTED_MODULE_5__["AutoDecoder"](obj.data);

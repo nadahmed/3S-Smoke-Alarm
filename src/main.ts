@@ -20,7 +20,11 @@ const mqttevent = new MQTTEventManager();
 
 ipcMain.on('mqtt-event-initial', async (event, _) => {
     const objs = await mqttevent.all();
-    objs.forEach( (obj) => {
+    objs.forEach( (obj:any) => {
+        obj.devEUI = obj.devEUI ? obj.devEUI: obj['deviceInfo']['devEui'];
+        obj.applicationName = obj.applicationName ? obj.applicationName: obj['deviceInfo']['applicationName'];
+        obj.deviceName = obj.deviceName ? obj.deviceName: obj['deviceInfo']['deviceName'];
+        obj.applicationID = obj.applicationID ? obj.applicationID: obj['deviceInfo']['applicationId'];
         event.sender.send('mqtt-event', obj);
     });
 });
@@ -60,7 +64,7 @@ if (!config && !configV2) {
     store.set('configV2', configV2);
 }
 
-const topic = 'application/' + configV2.meta.applicationId + '/device/+/rx';
+const topic = 'application/' + configV2.meta.applicationId + '/device/+/event/up';
 
 const gotTheLock = app.requestSingleInstanceLock();
 app.allowRendererProcessReuse = true;
@@ -111,9 +115,7 @@ app.on('ready', async () => {
     });
 
     client.on('message', async (_, message) => {
-        const obj: MqttMessage = JSON.parse(message.toString());
-
-        console.log('[MQTT PARSED DATA]: ', obj.data);
+        const obj: any = JSON.parse(message.toString());
 
         let alarm: AutoDecoder = null;
         try {
@@ -145,6 +147,10 @@ app.on('ready', async () => {
             time: Date.now(),
             ...obj,
         };
+        objEvent.devEUI = objEvent.devEUI ? objEvent.devEUI: obj['deviceInfo']['devEui'];
+        objEvent.applicationName = objEvent.applicationName ? objEvent.applicationName: obj['deviceInfo']['applicationName'];
+        objEvent.deviceName = objEvent.deviceName ? objEvent.deviceName: obj['deviceInfo']['deviceName'];
+        objEvent.applicationID = objEvent.applicationID ? objEvent.applicationID: obj['deviceInfo']['applicationId'];
         mqttevent.insertData(objEvent);
 
 

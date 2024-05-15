@@ -45,6 +45,7 @@ export class ViewerWindow {
         this.win.loadURL('file://' + path.join(__dirname, '../../src/Frontend/Viewer/index.html'));
         this.win.once('ready-to-show', () => {
             this.win.show();
+            // this.win.webContents.openDevTools();
         });
         
         this.win.once('close', () => {
